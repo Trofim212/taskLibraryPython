@@ -1,15 +1,13 @@
 from .errors import NotConvertError, ToManyValuesError, InputError, BaseTaskError
-from datetime import date
-from typing import Any, Iterable
+from datetime import date, time
+from typing import Any, Iterable, Type
 
 
 class Argument:
     "Basic class for all arguments"
-    resp: str | Iterable[str] = None
-    name: str = None
-    type = None
+    name: str
     input_message: str = None
-    options = None
+    resp: str | Iterable[str] = None
     error: BaseTaskError = None
 
     def __init__(self, name: str, input_message=None, *args, **kwargs) -> None:
@@ -30,7 +28,9 @@ class Argument:
 
 
 class BasicArgument(Argument):
-    def is_valid(self) -> Any:
+    type: Type = None
+
+    def is_valid(self) -> bool:
         try:
             self.value = self.type(self.resp)
             return True
@@ -55,13 +55,14 @@ class Float(BasicArgument):
 
 
 class Date(Argument):
-    type = date
     separator = "-"
 
     def __init__(self, name: str, input_message=None, *args, **kwargs) -> None:
         if sep := kwargs.get("sep"):
             self.separator = sep
-        sep = self.separator
+        else:
+            sep = self.separator
+
         self.input_message = f"Write date in format dd{sep}mm{sep}yyyy"
         super().__init__(name, input_message, *args, **kwargs)
 
@@ -69,7 +70,7 @@ class Date(Argument):
         try:
             day, month, year = map(int, self.resp.split(self.separator))
         except ValueError:
-            self.error = InputError(self.resp)
+            self.error = InputError(self.resp,"Incorrect data format")
             return False
 
         try:

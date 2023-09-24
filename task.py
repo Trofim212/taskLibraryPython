@@ -10,11 +10,11 @@ class Result:
     args: list[Argument] = []
     error_args: list[Argument] = []
 
-    def add(self, arg: Argument):
+    def add(self, arg: Argument) -> None:
         self.args.append(arg)
         setattr(self, arg.name, arg.value)
 
-    def add_error_arg(self, arg: Argument):
+    def add_error_arg(self, arg: Argument) -> None:
         self.error_args.append(arg)
         setattr(self, arg.name, None)
 
@@ -48,7 +48,7 @@ class Task:
         if len(set(names)) != len(names):
             raise ValueError("Argument names must not repeated")
 
-    def show_arg_input(self, arg: Argument):
+    def show_arg_input(self, arg: Argument) -> None:
         arg.get_input()
         if self.kwargs.get("repeat") == True:
             while not arg.is_valid():
@@ -67,10 +67,10 @@ class Task:
 
         return result
 
-    def get_task_result(self) -> Any:
+    def get_task_result(self) -> str:
         result = self.get_result()
 
-        if self.kwargs.get("dict") == True:
+        if self.kwargs.get("dict"):
             result = result.to_dict()
 
         try:
@@ -81,7 +81,10 @@ class Task:
         except Exception as exc:
             raise TaskError(exc, self.name)
 
-        return task_result
+        try:
+            return str(task_result)
+        except Exception as e:
+            raise TaskError(e, self.name)
 
     def run(self) -> None:
         print(f"________{self.name}________")
@@ -172,8 +175,14 @@ class TaskLauncher:
             tasks[name].run()
 
 
-def task(name: str, args: Iterable[Argument] = [], *options, **kwargs):
+def task(
+    name: str,
+    args: Iterable[Argument] = [],
+    task_class: Task = Task,
+    *options,
+    **kwargs,
+):
     def wrap(task):
-        return Task(task, name, args, *options, **kwargs)
+        return task_class(task, name, args, *options, **kwargs)
 
     return wrap
